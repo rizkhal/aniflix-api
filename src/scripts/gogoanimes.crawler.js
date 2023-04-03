@@ -1,7 +1,7 @@
 const fs = require("fs");
 const puppeteer = require("puppeteer");
 
-(async () => {
+module.exports = async () => {
   const browser = await puppeteer.launch({
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
@@ -21,10 +21,10 @@ const puppeteer = require("puppeteer");
     });
   });
 
-  fs.writeFile("./src/data/gogonime.json", JSON.stringify(results), (err) => {
+  fs.writeFile("src/static/gogonime.json", JSON.stringify(results), (err) => {
     if (err) throw err;
     console.log("Results saved to results.json");
   });
 
   await browser.close();
-})();
+};

@@ -1,0 +1,63 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "mysql"
+    url      = env("DATABASE_URL")
+}
+
+// Anime Provider
+model Provider {
+    id    Int     @id @default(autoincrement())
+    name  String  @unique @db.VarChar(100)
+    Anime Anime[]
+
+    @@map("providers")
+}
+
+model User {
+    id        Int        @id @default(autoincrement())
+    username  String     @unique @db.VarChar(150)
+    password  String     @db.VarChar(150)
+    createdAt DateTime   @default(now()) @map("created_at")
+    updatedAt DateTime   @updatedAt @map("updated_at")
+    Bookmark  Bookmark[]
+
+    @@map("users")
+}
+
+// Anime Info
+model Anime {
+    id          Int       @id @default(autoincrement())
+    provider    Provider? @relation(fields: [providerId], references: [id])
+    providerId  Int?      @map("provider_id")
+    url         String?   @unique @db.VarChar(250) // animeId
+    title       String?   @unique @db.VarChar(250)
+    image       String?   @unique @db.VarChar(250)
+    description String?   @db.LongText
+    meta        String?   @db.LongText
+    Bookmark    Bookmark?
+
+    @@map("animes")
+}
+
+model Bookmark {
+    id        Int      @id @default(autoincrement())
+    animeId   Int?     @unique @map("anime_id")
+    anime     Anime?   @relation(fields: [animeId], references: [id])
+    userId    Int?     @map("provider_id")
+    user      User?    @relation(fields: [userId], references: [id])
+    createdAt DateTime @default(now()) @map("created_at")
+
+    @@map("bookmarks")
+}
+
+// Anime Streaming Links
+model Link {
+    id      Int     @id @default(autoincrement())
+    animeId String? @unique @db.VarChar(250)
+    meta    String? @db.LongText
+
+    @@map("links")
+}

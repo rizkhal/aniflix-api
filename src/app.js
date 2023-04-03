@@ -1,13 +1,20 @@
+const router = require("./routes");
 const express = require("express");
-const results = require("./data/gogonime.json");
+const morgan = require("morgan");
+const cors = require("cors");
+const helmet = require("helmet");
+const dotenv = require("dotenv");
 
 const app = express();
 
-app.get("/api/gogoanimes/latest", (req, res) => {
-  res.json({
-    data: results,
-  });
-});
+dotenv.config();
+
+app.use(morgan("dev"));
+app.use(helmet());
+app.use(cors());
+app.use(express.json());
+
+app.use("/api", router);
 
 const PORT = process.env.PORT || 5000;
 
