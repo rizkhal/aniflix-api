@@ -1,13 +1,15 @@
 const fs = require("fs");
-const browser = require("../utils/browser");
 const dotenv = require("dotenv");
+const browser = require("../utils/browser");
 
 dotenv.config();
 
 const WEB_URL = `${process.env.ANOBOY_PROVIDER}/`;
 
 const latest = async () => {
-  const page = await browser.newPage();
+  const chrome = await browser();
+  const page = await chrome.newPage();
+
   await page.goto(WEB_URL);
 
   const results = await page.$$eval(".home_index a", (links) => {
@@ -53,12 +55,13 @@ const latest = async () => {
     }
   );
 
-  await browser.close();
+  await chrome.close();
 };
 
 const info = async (animeId) => {
   const HIT_URL = WEB_URL + animeId;
-  const page = await browser.newPage();
+  const chrome = await browser();
+  const page = await chrome.newPage();
   await page.goto(HIT_URL);
 
   const title = await page.$eval("div.pagetitle h1", (payload) =>
@@ -81,7 +84,7 @@ const info = async (animeId) => {
     firstElement
   );
 
-  await browser.close();
+  await chrome.close();
 
   return {
     title: title,
@@ -93,51 +96,58 @@ const info = async (animeId) => {
 const watch = async (episodeId) => {
   const HIT_URL = WEB_URL + episodeId;
 
-  const page = await browser.newPage();
+  const chrome = await browser();
+  const page = await chrome.newPage();
+
   await page.goto(HIT_URL);
 
-  const video360 = await page.$eval("iframe#mediaplayer", (payload) =>
-    payload.getAttribute("src")
-  );
-
-  const mirrors = await page.$$eval("div.vmiror", (payloads) => {
+  const results = await page.$$eval("div.vmiror", (payloads) => {
     return payloads.map((item) => {
       const a = item.querySelectorAll("a");
 
-      const links = Array.from(a).map((item) =>
-        item.getAttribute("data-video")
-      );
-
-      const resolutions = Array.from(a).map((item) => item.textContent);
+      const links = Array.from(a).map((item) => {
+        return {
+          link: item.getAttribute("data-video"),
+          resolution: item.textContent.trim(),
+        };
+      });
 
       const serverResolutions = item.textContent;
       const [server, _] = serverResolutions.trim().split(" ");
 
       return {
         server: server,
-        resolutions: resolutions,
         videos: links,
       };
     });
   });
 
-  const results = mirrors.map((obj, index) => {
-    if (obj.videos.includes("/loading.html")) {
-      obj.videos[index] = video360;
-    }
+  const video360 = await page.$eval("iframe#mediaplayer", (payload) =>
+    payload.getAttribute("src")
+  );
 
-    return obj;
+  const mirrors = results.map((item) => {
+    return {
+      ...item,
+      videos: item.videos.map((subItem) => {
+        return {
+          ...subItem,
+          link: subItem.link === "/loading.html" ? video360 : subItem.link,
+        };
+      }),
+    };
   });
 
-  await browser.close();
+  await chrome.close();
 
-  return results;
+  return mirrors;
 };
 
 const schedule = async () => {
   const HIT_URL = `${WEB_URL}2015/05/anime-subtitle-indonesia-ini-adalah-arsip-file-kami/`;
 
-  const page = await browser.newPage();
+  const chrome = await browser();
+  const page = await chrome.newPage();
   await page.goto(HIT_URL);
 
   const results = await page.$$eval("div.unduhan", (payloads) => {
@@ -174,7 +184,7 @@ const schedule = async () => {
     }
   );
 
-  await browser.close();
+  await chrome.close();
 };
 
 module.exports = {
