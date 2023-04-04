@@ -1,5 +1,5 @@
 const fs = require("fs");
-const puppeteer = require("puppeteer");
+const browser = require("../utils/browser");
 const dotenv = require("dotenv");
 
 dotenv.config();
@@ -7,11 +7,6 @@ dotenv.config();
 const WEB_URL = `${process.env.ANOBOY_PROVIDER}/`;
 
 const latest = async () => {
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
-
   const page = await browser.newPage();
   await page.goto(WEB_URL);
 
@@ -63,11 +58,6 @@ const latest = async () => {
 
 const info = async (animeId) => {
   const HIT_URL = WEB_URL + animeId;
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
-
   const page = await browser.newPage();
   await page.goto(HIT_URL);
 
@@ -102,11 +92,6 @@ const info = async (animeId) => {
 
 const watch = async (episodeId) => {
   const HIT_URL = WEB_URL + episodeId;
-
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
 
   const page = await browser.newPage();
   await page.goto(HIT_URL);
@@ -151,11 +136,6 @@ const watch = async (episodeId) => {
 
 const schedule = async () => {
   const HIT_URL = `${WEB_URL}2015/05/anime-subtitle-indonesia-ini-adalah-arsip-file-kami/`;
-
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
 
   const page = await browser.newPage();
   await page.goto(HIT_URL);
