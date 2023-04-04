@@ -1,18 +1,26 @@
 const express = require("express");
-const results = require("../static/anoboy.json");
 const prisma = require("../database/client");
-const { detail, schedule, info } = require("../scripts/anoboy.crawler");
+const { watch, info } = require("../scripts/anoboy.crawler");
+
+const results = require("../static/anoboy/latest.json");
 
 const router = express();
 
 router.get("/anoboy/latest", (req, res) => {
+  const result = results.data.map((item) => {
+    return {
+      ...item,
+      image: process.env.ANOBOY_PROVIDER + item.image,
+    };
+  });
+
   return res.json({
-    data: results,
+    data: result,
   });
 });
 
 router.get("/anoboy/schedule", async (req, res) => {
-  const results = await schedule();
+  const results = require("../static/anoboy/schedule.json");
 
   return res.json({
     data: results,
@@ -46,17 +54,18 @@ router.get("/anoboy/info", async (req, res) => {
     const r = find[0];
 
     return res.json({
-      data: {
-        ...r,
-        meta: JSON.parse(r.meta),
-      },
+      data: Object.assign(r, {
+        animeId: r.url,
+        url: process.env.ANOBOY_PROVIDER + r.url,
+        meta: r.meta ? JSON.parse(r.meta) : [],
+      }),
     });
   }
 
   const results = await info(animeId);
 
   const response = await prisma.$transaction(async (prisma) => {
-    const res = await prisma.anime.create({
+    const r = await prisma.anime.create({
       data: {
         url: animeId,
         providerId: provider.id,
@@ -66,10 +75,13 @@ router.get("/anoboy/info", async (req, res) => {
       },
     });
 
-    return {
-      ...res,
-      meta: JSON.parse(res.meta),
-    };
+    return res.json({
+      data: Object.assign(r, {
+        animeId: r.url,
+        url: process.env.ANOBOY_PROVIDER + r.url,
+        meta: r.meta ? JSON.parse(r.meta) : [],
+      }),
+    });
   });
 
   return res.json({
@@ -78,17 +90,17 @@ router.get("/anoboy/info", async (req, res) => {
 });
 
 router.get("/anoboy/watch", async (req, res) => {
-  const { animeId } = req.query;
-  if (!animeId) {
+  const { episodeId } = req.query;
+  if (!episodeId) {
     return res.status(400).json({
       error: "Bad Request",
-      message: "animeId query params is required",
+      message: "episodeId query params is required",
     });
   }
 
   const find = await prisma.link.findFirst({
     where: {
-      animeId: animeId,
+      episodeId: episodeId,
     },
   });
 
@@ -101,12 +113,12 @@ router.get("/anoboy/watch", async (req, res) => {
     });
   }
 
-  const results = await detail(animeId);
+  const results = await watch(episodeId);
 
   const link = await prisma.$transaction(async (prisma) => {
     const res = await prisma.link.create({
       data: {
-        animeId: animeId,
+        episodeId: episodeId,
         meta: JSON.stringify(results),
       },
     });

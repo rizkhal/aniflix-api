@@ -1,7 +1,10 @@
 const fs = require("fs");
 const puppeteer = require("puppeteer");
+const dotenv = require("dotenv");
 
-const WEB_URL = "https://anoboy.ink/";
+dotenv.config();
+
+const WEB_URL = `${process.env.ANOBOY_PROVIDER}/`;
 
 const latest = async () => {
   const browser = await puppeteer.launch({
@@ -34,17 +37,20 @@ const latest = async () => {
 
     return anchors.map((link) => {
       const img = link.querySelector("img");
+      const schedule = link.querySelector(".jamup");
 
       return {
         url: link.href,
         title: link.title,
+        episodeId: link.href.split("/").slice(3).join("/"),
         image: img?.getAttribute("src"),
+        schedule: schedule.textContent.trim(),
       };
     });
   });
 
   fs.writeFile(
-    "src/data/anoboy.json",
+    "src/static/anoboy.json",
     JSON.stringify({ data: results }),
     (err) => {
       if (err) throw err;
@@ -94,8 +100,8 @@ const info = async (animeId) => {
   };
 };
 
-const detail = async (animeId) => {
-  const HIT_URL = WEB_URL + animeId;
+const watch = async (episodeId) => {
+  const HIT_URL = WEB_URL + episodeId;
 
   const browser = await puppeteer.launch({
     headless: true,
@@ -177,14 +183,23 @@ const schedule = async () => {
     });
   });
 
-  await browser.close();
+  const filtered = results.filter((item) => item !== null);
 
-  return results.filter((item) => item !== null);
+  fs.writeFile(
+    "src/static/anoboy/schedule.json",
+    JSON.stringify({ data: filtered }),
+    (err) => {
+      if (err) throw err;
+      console.log("Results saved to results.json");
+    }
+  );
+
+  await browser.close();
 };
 
 module.exports = {
   info,
   latest,
-  detail,
+  watch,
   schedule,
 };

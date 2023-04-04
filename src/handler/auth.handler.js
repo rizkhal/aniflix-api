@@ -46,6 +46,7 @@ const login = async (req, res) => {
         user: {
           id: user.id,
           username: user.username,
+          providerId: user.providerId,
         },
         token: {
           expiresIn: process.env.JWT_TOKEN_EXPIRED_AT,

@@ -12,17 +12,20 @@ model Provider {
     id    Int     @id @default(autoincrement())
     name  String  @unique @db.VarChar(100)
     Anime Anime[]
+    User  User[]
 
     @@map("providers")
 }
 
 model User {
-    id        Int        @id @default(autoincrement())
-    username  String     @unique @db.VarChar(150)
-    password  String     @db.VarChar(150)
-    createdAt DateTime   @default(now()) @map("created_at")
-    updatedAt DateTime   @updatedAt @map("updated_at")
-    Bookmark  Bookmark[]
+    id         Int        @id @default(autoincrement())
+    username   String     @unique @db.VarChar(150)
+    password   String     @db.VarChar(150)
+    provider   Provider?  @relation(fields: [providerId], references: [id])
+    providerId Int?       @map("provider_id")
+    createdAt  DateTime   @default(now()) @map("created_at")
+    updatedAt  DateTime   @updatedAt @map("updated_at")
+    Bookmark   Bookmark[]
 
     @@map("users")
 }
@@ -55,9 +58,9 @@ model Bookmark {
 
 // Anime Streaming Links
 model Link {
-    id      Int     @id @default(autoincrement())
-    animeId String? @unique @db.VarChar(250)
-    meta    String? @db.LongText
+    id        Int     @id @default(autoincrement())
+    episodeId String? @unique @db.VarChar(250)
+    meta      String? @db.LongText
 
     @@map("links")
 }
