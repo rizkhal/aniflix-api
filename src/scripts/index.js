@@ -1,5 +1,9 @@
-const { watch } = require("./anoboy.crawler");
+const { watch } = require("./samehadaku.crawler");
 
 (async () => {
-  await watch("2023/04/nokemono-tachi-no-yoru-episode-10");
+  const result = await watch(
+    "kaguya-sama-wa-kokurasetai-first-kiss-wa-owaranai-episode-1/"
+  );
+
+  console.log(result);
 })();

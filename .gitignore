@@ -1,3 +1,6 @@
 .env
 /node_modules
 *.lock
+
+# WIP
+src/extractors/kraken.js
