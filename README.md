@@ -9,13 +9,12 @@ Anime streaming api build using **NodeJS** & **ExpressJS**.
 </div>
 
 ## Supported Server
-
-    - [ ] Mediafire
-    - [ ] Solidfiles
-    - [ ] Tusfiles
-    - [ ] Anonfiles
-    - [ ] Bayfiles
-    - [x] Racaty
-    - [x] Karaken
-    - [ ] Zippyshare
-    - [ ] Hxfile
+- [ ] Mediafire
+- [ ] Solidfiles
+- [ ] Tusfiles
+- [ ] Anonfiles
+- [ ] Bayfiles
+- [x] Racaty
+- [x] Karaken
+- [ ] Zippyshare
+- [ ] Hxfile
