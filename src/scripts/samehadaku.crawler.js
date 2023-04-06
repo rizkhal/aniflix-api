@@ -20,6 +20,45 @@ const SUPORTED_SERVER = Object.freeze({
 
 const BASE_URL = process.env.SAMEHADAKU_PROVIDER;
 
+const onGoing = async () => {
+  try {
+    const cachedResponse = cache.get("onGoing");
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    const { data } = await axios.get(BASE_URL);
+    const $ = cheerio.load(data);
+    const results = [];
+    $(".animposx").each((_, item) => {
+      const a = $(item).find("a");
+      const url = a.attr("href");
+      const cover = a.find("img").attr("src");
+      const status = a.find(".data").find(".type").text().trim();
+      const score = a.find(".score").text().trim();
+      const title = a.find(".data").find(".title").text().trim();
+      const type = a.find(".type").text().slice(0, -status.length);
+      const animeId = url.replace(/\/$/g, "").split("/").pop();
+
+      results.push({
+        score,
+        type,
+        status,
+        title,
+        animeId,
+        cover,
+        url,
+      });
+    });
+
+    cache.set("onGoing", results);
+
+    return results;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 const info = async (animeId) => {
   try {
     animeId = animeId.replace(/^\/|\/$/g, "");
@@ -99,12 +138,14 @@ const info = async (animeId) => {
   }
 };
 
-// FIXME: separating by server instead of scraping all in one time
-const watch = async (episodeId) => {
+// FIXME: request time
+const watch = async (server, episodeId) => {
   try {
     episodeId = episodeId.replace(/^\/|\/$/g, "");
 
-    const cachedResponse = cache.get(episodeId);
+    const cacheKey = episodeId + server;
+
+    const cachedResponse = cache.get(cacheKey);
     if (cachedResponse) {
       console.log("FROM CACHE");
       return cachedResponse;
@@ -114,29 +155,27 @@ const watch = async (episodeId) => {
 
     const $ = cheerio.load(response.data);
 
-    const krakens = [];
-    const racaty = [];
-
+    const promisses = [];
     $("div.download-eps a").each((_, item) => {
-      const server = $(item).text().toLocaleLowerCase();
+      const cServer = $(item).text().toLocaleLowerCase();
       const url = item.attribs.href;
 
-      switch (server) {
-        case SUPORTED_SERVER.RACATY:
-          racaty.push({
-            url: url,
-          });
-          break;
-        case SUPORTED_SERVER.KRAKEN:
-          krakens.push({
-            url: url,
-          });
-          break;
+      if (server.toLowerCase() === cServer) {
+        promisses.push({ url, server });
       }
     });
 
-    const racatyREAL = await axios
-      .all(racaty.map((endpoint) => racatyExtractor(endpoint.url)))
+    const results = await axios
+      .all(
+        promisses.map((e) => {
+          switch (e.server.toLowerCase()) {
+            case SUPORTED_SERVER.RACATY:
+              return racatyExtractor(e.url);
+            case SUPORTED_SERVER.KRAKEN:
+              return karakenExtractor(e.url);
+          }
+        })
+      )
       .then(
         axios.spread((...response) => {
           if (response) {
@@ -145,25 +184,9 @@ const watch = async (episodeId) => {
         })
       );
 
-    const krakenREAL = await axios
-      .all(krakens.map((endpoint) => karakenExtractor(endpoint.url)))
-      .then(
-        axios.spread((...response) => {
-          if (response) {
-            return response;
-          }
-        })
-      );
-
-    const filteredRacatyReal = racatyREAL.filter((item) => item !== null);
-    const filteredKrakenREAL = krakenREAL.filter((item) => item !== null);
-
-    const results = {
-      racaty: filteredRacatyReal,
-      karaken: filteredKrakenREAL,
-    };
-
-    cache.set(episodeId, results);
+    if (Object.keys(results).length) {
+      cache.set(cacheKey, results);
+    }
 
     return results;
   } catch (error) {
@@ -174,4 +197,5 @@ const watch = async (episodeId) => {
 module.exports = {
   info,
   watch,
+  onGoing,
 };

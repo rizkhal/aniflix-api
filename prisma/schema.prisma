@@ -7,6 +7,13 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
+model AnimeServer {
+    id        Int      @id @default(autoincrement())
+    name      String   @unique @db.VarChar(100)
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+}
+
 // Anime Provider
 model Provider {
     id    Int     @id @default(autoincrement())

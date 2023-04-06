@@ -4,6 +4,10 @@ const prisma = require("../src/database/client");
 async function main() {
   const userPassword = await bcrypt.hash("secret", 10);
 
+  await prisma.animeServer.createMany({
+    data: [{ name: "racaty" }, { name: "krakenfiles" }],
+  });
+
   await prisma.provider.createMany({
     data: [{ name: "anoboy" }],
   });
