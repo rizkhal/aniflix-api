@@ -220,16 +220,13 @@ const info = async (animeId) => {
     const thrailer = $("div#pembed iframe").attr("src");
 
     const episodes = [];
-    const ul = $("div.post-body");
-    const li = ul.find("li");
-
-    li.each((_, item) => {
+    $(".lstepsiode li").each((_, item) => {
       const div = $(item).find(".epsleft");
       const a = div.find("a");
       const link = a.attr("href");
       const date = div.find(".date");
       episodes.push({
-        episodeId: link.slice(BASE_URL.length + 1),
+        episodeId: link?.length ? link.slice(BASE_URL.length + 1) : null,
         link: link,
         text: a.text().trim(),
         date: date.text().trim(),
