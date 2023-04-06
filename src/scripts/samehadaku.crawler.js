@@ -20,6 +20,54 @@ const SUPORTED_SERVER = Object.freeze({
 
 const BASE_URL = process.env.SAMEHADAKU_PROVIDER;
 
+const recomendation = async () => {
+  try {
+    const cachedResponse = cache.get("recomendation");
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    const { data } = await axios.get(BASE_URL);
+
+    const $ = cheerio.load(data);
+
+    const results = [];
+    $("div.widgetseries li").each((_, item) => {
+      const a = $(item).find(".imgseries").find("a");
+      const img = $(a).find("img");
+      const ltinfo = $(item).find(".lftinfo");
+      const release = ltinfo.find("span").last().text().trim();
+      const genres = [];
+      ltinfo
+        .find("span")
+        .first()
+        .find("a")
+        .each((_, el) => {
+          const genre = $(el).text();
+          genres.push(genre);
+        });
+
+      results.push({
+        url: a.attr("href"),
+        title: img.attr("alt"),
+        thumbnail: img.attr("src"),
+        release,
+        genres,
+      });
+    });
+
+    const r = {
+      data: results,
+    };
+
+    cache.set("recomendation", r);
+
+    return r;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 const onGoing = async () => {
   try {
     const cachedResponse = cache.get("onGoing");
@@ -142,12 +190,17 @@ const info = async (animeId) => {
     const image = $("div.thumb img").attr("src");
 
     const genre = $('div.genre-info a[itemprop="genre"]')
-      .map((_, el) => $(el).text())
+      .map((_, el) => $(el).text().trim())
       .get();
 
-    const rating = $('span[itemprop="ratingValue"]').text();
-    const title = $('h1[itemprop="name"]').text();
-    const description = $('div[itemprop="description"]').text();
+    const ratingValue = $('span[itemprop="ratingValue"]').text().trim();
+    const ratingCount = $('i[itemprop="ratingCount"]').attr("content").trim();
+    const rating = {
+      ratingValue,
+      ratingCount,
+    };
+    const title = $('h1[itemprop="name"]').text().trim();
+    const description = $('div[itemprop="description"]').text().trim();
 
     const detailTable = $(".spe");
     const rows = detailTable.find("span");
@@ -248,11 +301,17 @@ const watch = async (server, episodeId) => {
         })
       );
 
-    if (Object.keys(results).length) {
-      cache.set(cacheKey, results);
+    const animeId = $(".nvsc a").attr("href");
+    const rr = {
+      animeId,
+      videos: results,
+    };
+
+    if (results.videos) {
+      cache.set(cacheKey, rr);
     }
 
-    return results;
+    return rr;
   } catch (error) {
     console.log(error);
   }
@@ -263,4 +322,5 @@ module.exports = {
   watch,
   latest,
   onGoing,
+  recomendation,
 };

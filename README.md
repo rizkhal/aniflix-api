@@ -15,6 +15,6 @@ Anime streaming api build using **NodeJS** & **ExpressJS**.
 - [ ] Anonfiles
 - [ ] Bayfiles
 - [x] Racaty
-- [x] Karaken
+- [x] Krakenfiles
 - [ ] Zippyshare
 - [ ] Hxfile

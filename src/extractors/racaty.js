@@ -27,6 +27,7 @@ module.exports = async (url) => {
       return {
         url: download_url,
         type: download_url.split(".").pop(),
+        poster: null,
         resolution: match.length ? match[0] : "Unknown",
       };
 

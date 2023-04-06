@@ -5,9 +5,25 @@ const {
   watch,
   onGoing,
   latest,
+  recomendation,
 } = require("../scripts/samehadaku.crawler");
 
 const router = express();
+
+router.get("/recomendation", async (req, res) => {
+  try {
+    const response = await recomendation();
+    return res.json(response);
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+router.get("/server/:episodeId", async (req, res) => {
+  return res.json({
+    data: "wip",
+  });
+});
 
 router.get("/ongoing", async (req, res) => {
   try {
@@ -61,9 +77,7 @@ router.get("/watch/:serverId/:episodeId", async (req, res) => {
       });
     }
 
-    return res.json({
-      data: response,
-    });
+    return res.json(response);
   } catch (error) {
     console.log(error);
   }
