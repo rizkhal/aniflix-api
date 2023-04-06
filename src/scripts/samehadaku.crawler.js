@@ -59,6 +59,60 @@ const onGoing = async () => {
   }
 };
 
+const latest = async (page) => {
+  try {
+    const URL =
+      BASE_URL + (page ? "/anime-terbaru/page/" + page : "/anime-terbaru");
+
+    const { data } = await axios.get(URL);
+
+    const $ = cheerio.load(data);
+
+    const results = [];
+    const li = $(".post-show li");
+    li.each((_, item) => {
+      const img = $(item).find("img");
+      const a = $(item).find(".entry-title").find("a");
+      const episodeId = a
+        .attr("href")
+        .replace(/\/[^\/]*$/, "")
+        .split("/")
+        .pop();
+
+      const contents = $(item).contents();
+      const episode = contents.find("span").first().text().trim();
+      const release = contents
+        .find("span")
+        .last()
+        .text()
+        .trim()
+        .replace("Released on: ", "");
+
+      const author = contents
+        .find('span[itemprop="author"]')
+        .find("author")
+        .text()
+        .trim();
+
+      results.push({
+        title: img.attr("alt"),
+        thumbnail: img.attr("src"),
+        episodeId: episodeId,
+        episode,
+        author,
+        release,
+      });
+    });
+
+    return {
+      hasMorePages: $("i#nextpagination").length ? true : false,
+      data: results,
+    };
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 const info = async (animeId) => {
   try {
     animeId = animeId.replace(/^\/|\/$/g, "");
@@ -197,5 +251,6 @@ const watch = async (server, episodeId) => {
 module.exports = {
   info,
   watch,
+  latest,
   onGoing,
 };

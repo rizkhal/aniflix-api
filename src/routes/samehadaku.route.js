@@ -1,6 +1,11 @@
 const express = require("express");
 const prisma = require("../database/client");
-const { info, watch, onGoing } = require("../scripts/samehadaku.crawler");
+const {
+  info,
+  watch,
+  onGoing,
+  latest,
+} = require("../scripts/samehadaku.crawler");
 
 const router = express();
 
@@ -11,6 +16,18 @@ router.get("/ongoing", async (req, res) => {
     return res.json({
       data: response,
     });
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+router.get("/latest", async (req, res) => {
+  try {
+    const { page } = req.query;
+
+    const response = await latest(page ? page : 1);
+
+    return res.json(response);
   } catch (error) {
     console.log(error);
   }
