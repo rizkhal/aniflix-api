@@ -64,6 +64,12 @@ const latest = async (page) => {
     const URL =
       BASE_URL + (page ? "/anime-terbaru/page/" + page : "/anime-terbaru");
 
+    const cacheKey = "latest" + page;
+    const cachedResponse = cache.get(cacheKey);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
     const { data } = await axios.get(URL);
 
     const $ = cheerio.load(data);
@@ -104,10 +110,14 @@ const latest = async (page) => {
       });
     });
 
-    return {
+    const result = {
       hasMorePages: $("i#nextpagination").length ? true : false,
       data: results,
     };
+
+    cache.set(cacheKey, result);
+
+    return result;
   } catch (error) {
     console.log(error);
   }
