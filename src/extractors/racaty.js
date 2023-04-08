@@ -28,7 +28,7 @@ module.exports = async (url) => {
         url: download_url,
         type: download_url.split(".").pop(),
         poster: null,
-        resolution: match.length ? match[0] : "Unknown",
+        resolution: Array.isArray(match) ? match[0] : "Unknown",
       };
 
       // console.log(`🔗 ${download_url}`);

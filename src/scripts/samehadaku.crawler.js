@@ -6,6 +6,7 @@ const {
   racaty: racatyExtractor,
   karaken: karakenExtractor,
 } = require("../extractors");
+const prisma = require("../database/client");
 
 dotenv.config();
 
@@ -19,6 +20,24 @@ const SUPORTED_SERVER = Object.freeze({
 });
 
 const BASE_URL = process.env.SAMEHADAKU_PROVIDER;
+
+const search = async (query) => {
+  try {
+    const cacheKey = "search" + query;
+    const cachedResponse = cache.get(cacheKey);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    const { data } = await axios.get(BASE_URL + `?s=${query}`);
+    const results = feedCardParser(data);
+    cache.set(cacheKey, results);
+
+    return results;
+  } catch (error) {
+    throw error;
+  }
+};
 
 const recomendation = async () => {
   try {
@@ -47,8 +66,12 @@ const recomendation = async () => {
           genres.push(genre);
         });
 
+      const url = a.attr("href");
+      const animeId = url.replace(/\/$/g, "").split("/").pop();
+
       results.push({
-        url: a.attr("href"),
+        animeId,
+        url,
         title: img.attr("alt"),
         thumbnail: img.attr("src"),
         release,
@@ -64,7 +87,7 @@ const recomendation = async () => {
 
     return r;
   } catch (error) {
-    console.log(error);
+    throw error;
   }
 };
 
@@ -76,34 +99,13 @@ const onGoing = async () => {
     }
 
     const { data } = await axios.get(BASE_URL);
-    const $ = cheerio.load(data);
-    const results = [];
-    $(".animposx").each((_, item) => {
-      const a = $(item).find("a");
-      const url = a.attr("href");
-      const cover = a.find("img").attr("src");
-      const status = a.find(".data").find(".type").text().trim();
-      const score = a.find(".score").text().trim();
-      const title = a.find(".data").find(".title").text().trim();
-      const type = a.find(".type").text().slice(0, -status.length);
-      const animeId = url.replace(/\/$/g, "").split("/").pop();
-
-      results.push({
-        score,
-        type,
-        status,
-        title,
-        animeId,
-        cover,
-        url,
-      });
-    });
+    const results = feedCardParser(data);
 
     cache.set("onGoing", results);
 
     return results;
   } catch (error) {
-    console.log(error);
+    throw error;
   }
 };
 
@@ -167,7 +169,7 @@ const latest = async (page) => {
 
     return result;
   } catch (error) {
-    console.log(error);
+    throw error;
   }
 };
 
@@ -193,8 +195,8 @@ const info = async (animeId) => {
       .map((_, el) => $(el).text().trim())
       .get();
 
-    const ratingValue = $('span[itemprop="ratingValue"]').text().trim();
-    const ratingCount = $('i[itemprop="ratingCount"]').attr("content").trim();
+    const ratingValue = $('span[itemprop="ratingValue"]').text()?.trim();
+    const ratingCount = $('i[itemprop="ratingCount"]').attr("content")?.trim();
     const rating = {
       ratingValue,
       ratingCount,
@@ -248,17 +250,16 @@ const info = async (animeId) => {
 
     return response;
   } catch (error) {
-    console.log(error);
+    throw error;
   }
 };
 
 // FIXME: request time
-const watch = async (server, episodeId) => {
+const watch = async (serverName, episodeId) => {
   try {
     episodeId = episodeId.replace(/^\/|\/$/g, "");
 
-    const cacheKey = episodeId + server;
-
+    const cacheKey = "watch" + episodeId + serverName;
     const cachedResponse = cache.get(cacheKey);
     if (cachedResponse) {
       console.log("FROM CACHE");
@@ -269,13 +270,25 @@ const watch = async (server, episodeId) => {
 
     const $ = cheerio.load(response.data);
 
+    const animeId = $(".nvsc a")
+      .attr("href")
+      .replace(/\/$/g, "")
+      .split("/")
+      .pop();
+
     const promisses = [];
+    const availableServer = [];
     $("div.download-eps a").each((_, item) => {
-      const cServer = $(item).text().toLocaleLowerCase();
+      const cServer = $(item).text().trim().toLowerCase();
       const url = item.attribs.href;
 
-      if (server.toLowerCase() === cServer) {
-        promisses.push({ url, server });
+      if (serverName.toLowerCase() === cServer) {
+        promisses.push({ url, server: serverName });
+      }
+
+      const index = availableServer.findIndex((server) => server === cServer);
+      if (index === -1) {
+        availableServer.push(cServer);
       }
     });
 
@@ -292,31 +305,64 @@ const watch = async (server, episodeId) => {
       )
       .then(
         axios.spread((...response) => {
-          if (response) {
-            return response;
-          }
+          return response.filter((item) => item !== null && item !== undefined);
         })
       );
 
-    const animeId = $(".nvsc a").attr("href");
+    const supportedServer = (await prisma.animeServer.findMany()).map(
+      (item) => item.name
+    );
+
     const rr = {
       animeId,
+      supportedServer,
+      availableServer,
       videos: results,
     };
 
-    if (results.videos) {
+    if (rr.videos.length > 0) {
       cache.set(cacheKey, rr);
     }
 
     return rr;
   } catch (error) {
     console.log(error);
+    throw error;
   }
+};
+
+const feedCardParser = (data) => {
+  const results = [];
+  const $ = cheerio.load(data);
+
+  $(".animposx").each((_, item) => {
+    const a = $(item).find("a");
+    const url = a.attr("href");
+    const cover = a.find("img").attr("src");
+    const status = a.find(".data").find(".type").text().trim();
+    const score = a.find(".score").text().trim();
+    const title = a.find(".data").find(".title").text().trim();
+    const type = a.find(".type").text().slice(0, -status.length);
+    const animeId = url.replace(/\/$/g, "").split("/").pop();
+
+    results.push({
+      score,
+      type,
+      status,
+      title,
+      animeId,
+      cover,
+      url,
+    });
+  });
+
+  return results;
 };
 
 module.exports = {
   info,
   watch,
+  search,
   latest,
   onGoing,
   recomendation,

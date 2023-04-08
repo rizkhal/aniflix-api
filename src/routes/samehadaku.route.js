@@ -3,25 +3,46 @@ const prisma = require("../database/client");
 const {
   info,
   watch,
-  onGoing,
   latest,
+  search,
+  onGoing,
   recomendation,
 } = require("../scripts/samehadaku.crawler");
 
 const router = express();
+
+router.get("/search", async (req, res) => {
+  try {
+    const { q } = req.query;
+    const response = await search(q);
+    return res.json({
+      data: response,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Server Error",
+      message: "Cant't fetch resources from server",
+    });
+  }
+});
 
 router.get("/recomendation", async (req, res) => {
   try {
     const response = await recomendation();
     return res.json(response);
   } catch (error) {
-    console.log(error);
+    return res.status(500).json({
+      error: "Server Error",
+      message: "Cant't fetch resources from server",
+    });
   }
 });
 
-router.get("/server/:episodeId", async (req, res) => {
+router.get("/servers", async (req, res) => {
+  const servers = await prisma.animeServer.findMany();
+
   return res.json({
-    data: "wip",
+    data: servers,
   });
 });
 
@@ -33,7 +54,10 @@ router.get("/ongoing", async (req, res) => {
       data: response,
     });
   } catch (error) {
-    console.log(error);
+    return res.status(500).json({
+      error: "Server Error",
+      message: "Cant't fetch resources from server",
+    });
   }
 });
 
@@ -45,7 +69,10 @@ router.get("/latest", async (req, res) => {
 
     return res.json(response);
   } catch (error) {
-    console.log(error);
+    return res.status(500).json({
+      error: "Server Error",
+      message: "Cant't fetch resources from server",
+    });
   }
 });
 
@@ -59,27 +86,35 @@ router.get("/info/:animeId", async (req, res) => {
     });
   } catch (error) {
     console.log(error);
+    return res.status(500).json({
+      error: "Server Error",
+      message: "Cant't fetch resources from server",
+    });
   }
 });
 
-router.get("/watch/:serverId/:episodeId", async (req, res) => {
+router.get("/watch/:serverName/:episodeId", async (req, res) => {
   try {
-    const { serverId, episodeId } = req.params;
+    const { serverName, episodeId } = req.params;
     const server = await prisma.animeServer.findFirst({
-      where: { id: Number(serverId) },
+      where: { name: serverName },
     });
 
-    const response = await watch(server.name, episodeId);
-
-    if (typeof response === "object" && !Object.keys(response).length) {
-      return res.status(500).json({
-        message: "Unable to finish request, please try again",
+    if (!server) {
+      return res.status(400).json({
+        error: "Bad Request",
+        message: "Unsuported Server",
       });
     }
 
+    const response = await watch(serverName, episodeId);
+
     return res.json(response);
   } catch (error) {
-    console.log(error);
+    return res.status(500).json({
+      error: "Server Error",
+      message: "Cant't fetch resources from server",
+    });
   }
 });
 

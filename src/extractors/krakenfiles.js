@@ -20,7 +20,7 @@ module.exports = async (url) => {
       url: `https:${videoURL}`,
       type: type,
       poster: `https:${posterURL}`,
-      resolution: match.length ? match[0] : "Unknown",
+      resolution: Array.isArray(match) ? match[0] : "Unknown",
     };
   });
 };

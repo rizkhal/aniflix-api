@@ -1,12 +1,9 @@
 const express = require("express");
-const bookmarkHandler = require("../handler/bookmark.handler");
-const authMiddleware = require("../middleware/auth.middleware");
+const bookmarkController = require("../controller/bookmark.controller");
 
 const router = express();
 
-router.use(authMiddleware);
-
-router.post("/bookmark", bookmarkHandler.store);
-router.delete("/bookmark", bookmarkHandler.destroy);
+router.post("/bookmark", bookmarkController.store);
+router.delete("/bookmark", bookmarkController.destroy);
 
 module.exports = router;

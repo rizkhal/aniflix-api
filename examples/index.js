@@ -1,20 +1,11 @@
-const {
-  watch,
-  info,
-  onGoing,
-  latest,
-  recomendation,
-} = require("../src/scripts/samehadaku.crawler");
+const acefileExtractor = require("../src/extractors/acefile");
 
 (async () => {
-  const response = await info("dr-stone-season-3-dr-stone-new-world/");
-  // const response = await watch(
-  //   "krakenfiles",
-  //   "kono-subarashii-sekai-ni-bakuen-wo-episode-1"
-  // );
-  // const response = await onGoing();
-  // const response = await latest(1);
-  // const response = await recomendation();
+  // "https://acefile.co/f/98026591/mahoyome-s2-01-360p-samehadaku-care-mkv"
+  // "https://acefile.co/f/98016641/kssnbw-1-1080p-samehadaku-care-mkv"
+  // "https://acefile.co/f/98016970/kssnbw-1-720p-x265-samehadaku-care-mkv"
 
-  console.log(response);
+  await acefileExtractor(
+    "https://acefile.co/f/98016642/kssnbw-1-fullhd-samehadaku-care-mp4"
+  );
 })();
