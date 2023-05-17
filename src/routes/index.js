@@ -15,7 +15,13 @@ const router = express();
 
 router.use(auth);
 
-router.use(authMiddleware);
+// router.use(authMiddleware);
+
+const geojson = require("../../wpp.json");
+
+router.get("/geojson", (req, res) => {
+  return res.status(200).json(geojson);
+});
 
 router.use("/samehadaku", samehadaku);
 router.use(bookmark);

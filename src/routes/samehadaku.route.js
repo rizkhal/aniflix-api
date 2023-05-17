@@ -93,6 +93,16 @@ router.get("/info/:animeId", async (req, res) => {
   }
 });
 
+router.get("/watch/:episodeId", async (req, res) => {
+  try {
+    return res.json({
+      dwdw: "dwdwdwdw",
+    });
+  } catch (error) {
+    console.log(error);
+  }
+});
+
 router.get("/watch/:serverName/:episodeId", async (req, res) => {
   try {
     const { serverName, episodeId } = req.params;

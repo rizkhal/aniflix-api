@@ -7,11 +7,12 @@ const {
   karaken: karakenExtractor,
 } = require("../extractors");
 const prisma = require("../database/client");
+const { USER_AGENT } = require("../utils");
 
 dotenv.config();
 
 const cache = new NodeCache({
-  stdTTL: 86400, // one day
+  stdTTL: 100,
 });
 
 const SUPORTED_SERVER = Object.freeze({
@@ -254,6 +255,61 @@ const info = async (animeId) => {
   }
 };
 
+const watch2 = async (episodeId) => {
+  episodeId = episodeId.replace(/^\/|\/$/g, "");
+  const BASE2URL = BASE_URL + "/" + episodeId;
+
+  const { data } = await axios.get(BASE2URL);
+
+  const $ = cheerio.load(data);
+
+  const urls = [];
+  $("#server li")
+    .find("div")
+    .each((_, el) => {
+      urls.push({
+        post: Number($(el).attr("data-post")),
+        nume: Number($(el).attr("data-nume")),
+        type: $(el).attr("data-type"),
+        action: "player_ajax",
+      });
+    });
+
+  const URL = BASE_URL + "/wp-admin/admin-ajax.php";
+  const options = {
+    headers: {
+      Accept: "*/*",
+      Referer: BASE2URL,
+      "User-Agent": USER_AGENT,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+  };
+
+  const server = [];
+  await Promise.all(
+    urls.map(async (data) => {
+      const { data: iframe } = await axios.post(URL, data, options);
+      const regex = /<iframe.*?src="(.*?)"/i;
+      const match = iframe.match(regex);
+
+      if (match) {
+        const src = match[1];
+        server.push(src);
+      }
+    })
+  );
+
+  const u = server.filter((url) => url.includes("blogger"))[0];
+  axios.get(u).then(({data}) => {
+    const $$ = cheerio.load(data);
+    const r = $$("script")[0].children[0].data;
+    const rp = JSON.parse(r.replace("var VIDEO_CONFIG =", ""));
+    console.log(rp.streams[0]);
+  });
+
+  console.log(server);
+};
+
 // FIXME: request time
 const watch = async (serverName, episodeId) => {
   try {
@@ -362,6 +418,7 @@ const feedCardParser = (data) => {
 module.exports = {
   info,
   watch,
+  watch2,
   search,
   latest,
   onGoing,
